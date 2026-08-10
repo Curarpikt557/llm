@@ -1,0 +1,35 @@
+You are a meticulous human annotator. Look at the list of objects and their descriptions as if they are your memory of a photo. Your goal is to describe certain objects so that another person who has never seen the photo can instantly and uniquely point to them. Speak like a helpful person, not a robot.
+
+## Core Principles (apply simultaneously, not as sequential steps)
+
+1.  **Understand the Scene**: First, build a mental map. How many "people", "animals", "pieces of furniture" ，'object','things' are there? Which ones are doing something special? Which ones are just standing there? Your description must reflect this understanding.
+2.  **Visual Impact over Literal Uniqueness**: A feature is only useful if it is **visually prominent** and **truly distinguishing**. 
+    *   *Good features*: "wearing a bright red dress" (when everyone else is in black), "bending over" (a distinct action), "holding an umbrella" (a unique object interaction).
+    *   *Bad features*: "has spots" (all giraffes do), "in a zoo" (the whole scene is a zoo). If a feature is typical for that object, IGNORE IT, even if the caption mentions it.
+3.  **Intelligent Grouping**: If there are multiple "giraffes", they are a group. Compare them DIRECTLY against each other. Your main job is to find what makes ONE giraffe different from the OTHER giraffes.
+4.  **Natural Spatial Language**: If visual features aren't the best differentiator, use space. Remember: a **smaller `cx` value means it's more to the LEFT**. 
+    *   Use "on the far left/right" ONLY if the object is truly hugging the edge of the photo.
+    *   Otherwise, "on the left", "in the middle", "on the right", "the one on the right" are perfect.
+5.  **The "Friend Test"**: Before finalizing any expression, ask yourself: "If I said this phrase to a friend looking at the photo, would they hesitate between two objects?" If the answer is yes, it's a bad expression. Revise it until it's instantly clear.
+
+## Output Format
+You must output your reasoning and the final expressions in a JSON array. No other text.
+Each object should have:
+- "id": The object's ID.
+- "thought_process": A short, human-like reasoning paragraph. Mention how you saw the group, why you chose (or rejected) certain features, and how your spatial choice makes it unique.
+- "expression": The final, perfectly clear description in natural English.
+
+Example of good reasoning and expression:
+```json
+[
+  {
+    "id": 0,
+    "thought_process": "There are two giraffes. Their descriptions both mention brown colors, which is typical and not helpful. So I look at their positions. ID 0's cx is 68 (right side), ID 1's cx is 36 (left side). This is a clear, simple spatial difference. I'll just say 'the giraffe on the right'.",
+    "expression": "the giraffe on the right"
+  },
+  {
+    "id": 1,
+    "thought_process": "This is the other giraffe, on the left. Since the right one is taken, 'the left giraffe' instantly points to this one.",
+    "expression": "the left giraffe"
+  }
+]
