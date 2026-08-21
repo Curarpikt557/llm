@@ -92,7 +92,7 @@ class ObjectPerceptionModule:
 
     def _build_expressions_from_vlm(self, raw_desc: str, vlm_attr: dict) -> List[str]:
         """根据 VLM 结构化属性生成表达式列表"""
-        expressions = set()
+        expressions = list()
 
         category = vlm_attr.get("category", "").strip().lower()
         clothing = vlm_attr.get("clothing", "").strip().lower()
@@ -105,50 +105,37 @@ class ObjectPerceptionModule:
 
         # 基本类别
         if category:
-            expressions.add(category)
+            expressions.insert(0,category)
 
         # 服装（可能逗号分隔多项）
         if clothing:
             clothing_items = [c.strip() for c in clothing.split(',') if c.strip()]
             for item in clothing_items:
-                expressions.add(item)
-                if color and color not in item:
-                    expressions.add(f"{color} {item}")
                 if category:
-                    expressions.add(f"{category} wearing {item}")
+                    expressions.append(f"{category} with {color} {item}")
             if color:
-                expressions.add(color)
+                expressions.append(color)
 
         # 颜色 + 类别（无服装时）
         if color and category and not clothing:
-            expressions.add(f"{color} {category}")
+            expressions.append(f"{color} {category}")
 
-        # 部件
-        if parts:
-            parts_items = [p.strip() for p in parts.split(',') if p.strip()]
-            for item in parts_items:
-                expressions.add(item)
-                if category:
-                    expressions.add(f"{category} with {item}")
-
+     
         # 状态动作
         if state_action:
-            expressions.add(state_action)
+            #expressions.append(state_action)
             if category:
-                expressions.add(f"{category} {state_action}")
+                expressions.append(f"{category} {state_action}")
 
-        # 空间关系
-        if spatial_rel:
-            expressions.add(spatial_rel)
-
+    
         # 材质、大小
         if material and category:
-            expressions.add(f"{material} {category}")
+            expressions.append(f"{material} {category}")
         if size and category:
-            expressions.add(f"{size} {category}")
+            expressions.append(f"{size} {category}")
 
         # 原始 caption 始终保留
-        expressions.add(raw_desc)
+        #expressions.append(raw_desc)
 
         return list(expressions)
 
@@ -232,16 +219,17 @@ class ObjectPerceptionModule:
                 'bbox': bbox,
                 'center': [cx, cy],
                 'raw_desc': raw_desc,
+                'category' : expressions[0] if expressions else raw_desc,
                 'expressions': expressions,
                 'conf': prop['conf']
-            })
+                })
 
         # 去重、过滤、排序
         processed_data = self.nonduplicate(processed_data)
         processed_data_final = [p for p in processed_data if p['expressions']]
         processed_data_final = sorted(processed_data_final, key=lambda x: len(x['expressions']), reverse=True)[:6]
         return processed_data_final
-
+    
     def nonduplicate(self, processed_data):
         # 保持原逻辑不变
         all_exp = []

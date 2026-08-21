@@ -16,17 +16,24 @@ sys.path.insert(0, os.path.join(project_root, "MiDaS"))
 
 from config.config import OmniQConfig
 from core.object_perception import ObjectPerceptionModule
-from core.spatial_graph import SpatialGraphModule
 from core.spatial_relation import SpatialRelationModule3D
+from core.spatial_graph import SpatialGraphModule
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Omni-Q Data Generation Pipeline (VLM mode)")
-    parser.add_argument("--vlm_json", type=str, default = '../attr/full_attr.json',required=True, help="Path to VLM annotated JSON (e.g., grit_caption_refined.json)")
-    parser.add_argument("--image_dir", type=str, default="../unc_train", help="Root folder of images")
-    parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save generated data")
-    parser.add_argument("--midas_weights", type=str, default="./MiDaS/weights/dpt_beit_large_512.pt", help="Path to MiDaS weights")
-    parser.add_argument("--midas_type", type=str, default="dpt_beit_large_512", help="MiDaS model type")
+    parser.add_argument("--vlm_json", type=str, default='../attr/full_attr.json',
+                        help="Path to VLM annotated JSON (e.g., grit_caption_refined.json)")
+    parser.add_argument("--image_dir", type=str,
+                        default="../unc_train",
+                        help="Root folder of images")
+    parser.add_argument("--output_dir", type=str, default="./output",
+                        help="Directory to save generated data")
+    parser.add_argument("--midas_weights", type=str,
+                        default="./MiDaS/weights/dpt_beit_large_512.pt",
+                        help="Path to MiDaS weights")
+    parser.add_argument("--midas_type", type=str, default="dpt_beit_large_512",
+                        help="MiDaS model type")
     return parser.parse_args()
 
 
@@ -53,7 +60,7 @@ def main():
 
     # 读取 VLM 标注 JSON
     with open(args.vlm_json, 'r', encoding='utf-8') as f:
-        vlm_data = json.load(f)
+        vlm_data = json.load(f)  # 若数据量大，可考虑分批处理
     print(f"Loaded {len(vlm_data)} images from VLM JSON.")
 
     final_dataset = []
@@ -77,7 +84,7 @@ def main():
             bbox_xywh = obj["bbox"]  # [x, y, w, h]
             x1, y1, w, h = bbox_xywh
             proposals.append({
-                'bbox': [x1, y1, x1 + w, y1 + h],  # 转为 [x1, y1, x2, y2]
+                'bbox': [x1, y1, w,  h],  # 转为 [x1, y1, x2, y2]
                 'description': obj["caption"],
                 'conf': obj.get("conf", 0.7)       # 使用 JSON 中的置信度或默认值
             })
@@ -90,11 +97,8 @@ def main():
 
         # 深度估计
         try:
-            # 使用绝对路径避免 chdir 问题
-            midas_dir = os.path.join(project_root, "MiDaS")
-            os.chdir(midas_dir)
-            depth_map = srm.estimate_depth(image_path)  # 注意：SpatialRelationModule3D 内部会处理路径
-            os.chdir(project_root)  # 回到项目根目录
+            # 直接使用绝对路径调用，无需 chdir
+            depth_map = srm.estimate_depth(image_path)
         except Exception as e:
             print(f"[Depth Error] {image_id}: {e}")
             continue
@@ -118,13 +122,12 @@ def main():
         processed_count += 1
 
     # 保存结果
-    output_json = os.path.join(args.output_dir, "omni_q_generated_data.json")
-    output_pth = os.path.join(args.output_dir, "unc_train.pth")
-    with open(output_json, 'w', encoding='utf-8') as f:
-        json.dump(final_dataset, f, indent=2, ensure_ascii=False)
+   
+    output_pth = os.path.join(args.output_dir, "../unc_train_pseudo.pth")
+    
     torch.save(final_dataset, output_pth)
     print(f"Done! Processed {processed_count} images, generated {len(final_dataset)} queries.")
-    print(f"Saved to {output_json} and {output_pth}")
+    print(f"Saved to {output_pth}")
 
 
 if __name__ == "__main__":
